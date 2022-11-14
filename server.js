@@ -1,4 +1,6 @@
-require('dotenv').config()
+if (process.env.NODE_ENV !== "production") {
+    require('dotenv').config();
+}
 const express = require('express')
 const app = express()
 const ejs = require('ejs')
@@ -7,8 +9,8 @@ const expressLayout = require('express-ejs-layouts')
 const PORT = process.env.PORT || 3000
 const mongoose = require('mongoose')
 const session = require('express-session')
-const flash = require ('express-flash')
-const MongoDbStore = require('connect-mongo')
+const flash = require('express-flash')
+const MongoStore = require('connect-mongo');
 const passport = require('passport')
 const Emitter = require('events')
 
@@ -24,31 +26,51 @@ const Emitter = require('events')
 // });
 
 // Database Connection
-mongoose.connect("mongodb+srv://admin:admin@cluster0.u7yingm.mongodb.net/?retryWrites=true&w=majority",{useNewUrlParser: true});
-const db=mongoose.connection;
-db.once('open',_=>{
-    console.log('Database connected')
-})
-
-db.on('error',err =>{
-    console.log('connection error:',err)
-})
+const DB_URL = process.env.MONGO_CONNECTION_URL;
+mongoose
+  .connect(DB_URL)
+  .then(() => {
+    console.log('MONGOOSE CONNECTION OPEN');
+  })
+  .catch((err) => {
+    console.log('IN MONGOOSE SOMETHING WENT WRONG', err);
+  });
 
 
 // Session config
-app.use(session({
-    secret: 'jhvhg cgfcgfcgf',
+const store = MongoStore.create({
+    mongoUrl: DB_URL,
+    secret: 'SECRET',
+    touchAfter: 24 * 60 * 60
+});
+const sessionConfig = {
+    store,
+    name: 'session',
+    secret: 'SECRET',
     resave: false,
-    store: MongoDbStore.create({
-        mongoUrl: process.env.MONGO_CONNECTION_URL
-    }),
-    saveUninitialized: false,
-    cookie: {maxAge:1000*60*60*24} // 24 hours
-}))
+    saveUninitialized: true,
+    cookie: {
+        expires: Date.now() + 1000 * 60 * 60 * 24 * 7,
+        maxAge: 1000 * 60 * 60 * 24 * 7,
+        httpOnly: true,
+    }
+}
+
+app.use(session(sessionConfig));
+// app.use(session({
+//     secret: 'thisismysecret',
+//     resave: false,
+//     saveUninitialized: false,
+//     store: MongoDbStore.create({
+//         mongoUrl: DB_URL,
+//         secret: 'thisisascret',
+//         touchAfter: 24 * 3600
+//     })
+// }));
 
 //Event emitter
 const eventEmitter = new Emitter()
-app.set('eventEmitter',eventEmitter)
+app.set('eventEmitter', eventEmitter)
 
 // Passport config
 const passportInit = require('./app/config/passport')
@@ -60,12 +82,12 @@ app.use(passport.session())
 app.use(flash())
 
 // Assets
-app.use(express.static('public')) 
+app.use(express.static('public'))
 app.use(express.urlencoded({ extended: false }))
 app.use(express.json())
 
 //Global Middleware
-app.use((req,res,next) => {
+app.use((req, res, next) => {
     res.locals.session = req.session
     res.locals.user = req.user
     next()
@@ -74,25 +96,25 @@ app.use((req,res,next) => {
 // set Template engine
 
 app.use(expressLayout)
-app.set('views',path.join(__dirname,'/resources/views'))
+app.set('views', path.join(__dirname, '/resources/views'))
 app.set('view engine', 'ejs')
 
 
 require('./routes/web')(app)
-app.use((req,res)=>{
+app.use((req, res) => {
     res.status(404).render('errors/404')
 })
 
-const server = app.listen(PORT,() => {
-                console.log(`Listening on port ${PORT}`)
-            })
+const server = app.listen(PORT, () => {
+    console.log(`Listening on port ${PORT}`)
+})
 
 // Socket
 
 const io = require('socket.io')(server)
-io.on('connection',(socket)=>{
+io.on('connection', (socket) => {
     // Join 
-    socket.on('join',(orderId) => {
+    socket.on('join', (orderId) => {
         socket.join(orderId)
     })
 })
