@@ -15,26 +15,26 @@ const passport = require('passport')
 const Emitter = require('events')
 
 // Database Connection
-const url = 'mongodb://127.0.0.1:27017/pizza';
+// const url = 'mongodb://127.0.0.1:27017/pizza';
 
-mongoose.connect(url, {useNewUrlParser: true, useCreateIndex:true, useUnifiedTopology: true, useFindAndModify: true});
-const connection = mongoose.connection;
-connection.once('open',()=>{
-    console.log('Database connected.....');
-}).catch(err => {
-    console.log('Connection failed.....')
-});
+// mongoose.connect(url, {useNewUrlParser: true, useCreateIndex:true, useUnifiedTopology: true, useFindAndModify: true});
+// const connection = mongoose.connection;
+// connection.once('open',()=>{
+//     console.log('Database connected.....');
+// }).catch(err => {
+//     console.log('Connection failed.....')
+// });
 
 // Database Connection
-// const DB_URL = process.env.MONGO_CONNECTION_URL;
-// mongoose
-//   .connect(DB_URL)
-//   .then(() => {
-//     console.log('MONGOOSE CONNECTION OPEN');
-//   })
-//   .catch((err) => {
-//     console.log('IN MONGOOSE SOMETHING WENT WRONG', err);
-//   });
+const DB_URL = process.env.MONGO_CONNECTION_URL;
+mongoose
+  .connect(DB_URL)
+  .then(() => {
+    console.log('MONGOOSE CONNECTION OPEN');
+  })
+  .catch((err) => {
+    console.log('IN MONGOOSE SOMETHING WENT WRONG', err);
+  });
 
 
 // Session config
